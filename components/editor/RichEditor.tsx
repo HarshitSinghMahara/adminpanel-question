@@ -43,6 +43,12 @@ export default function RichEditor({
       const html = editor.getHTML()
       // Don't persist transient blob: URLs — wait until uploads complete
       if (html.includes('blob:')) return
+      // Debug: log whether we're saving and whether a data:image is present
+      // (helps confirm if the data URL reached the editor before saving)
+      try {
+        // eslint-disable-next-line no-console
+        console.log('RichEditor:onUpdate saving, has data url:', html.includes('data:image'))
+      } catch {}
       onChange(html)
     },
     onFocus() {
@@ -116,6 +122,12 @@ export default function RichEditor({
     if (!editor) return
     const currentHTML = editor.getHTML()
     if (content !== currentHTML && !focused) {
+      // Don't overwrite if editor already contains an inlined data image
+      // that the persistent `content` doesn't yet have. This prevents
+      // a race where the store replaces the editor right after paste.
+      if (currentHTML.includes('data:image') && !content.includes('data:image')) {
+        return
+      }
       isUpdatingRef.current = true
       editor.commands.setContent(content, { emitUpdate: false })
       isUpdatingRef.current = false
