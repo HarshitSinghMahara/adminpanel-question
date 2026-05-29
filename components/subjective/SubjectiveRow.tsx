@@ -48,6 +48,12 @@ function savePinnedTags(tags: string[]) {
 
 const COLLAPSED_HEIGHT = 44
 
+function extractFirstImageSrc(html?: string) {
+  if (!html) return null
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+  return m ? m[1] : null
+}
+
 export default function SubjectiveRow({
   question, gridTemplate, colWidths, isExpanded, onToggle, onPreview,
 }: SubjectiveRowProps) {
@@ -105,6 +111,8 @@ export default function SubjectiveRow({
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120) || 'Untitled question…'
+
+  const firstImageSrc = extractFirstImageSrc(question.questionHTML)
 
   return (
     <div
@@ -205,9 +213,15 @@ export default function SubjectiveRow({
                 overflow: 'hidden',
               }}
             >
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {questionPreview}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {questionPreview}
+                </span>
+                {firstImageSrc && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={firstImageSrc} alt="preview" style={{ width: 56, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                )}
+              </div>
               <span style={{
                 background: 'var(--surface-2)',
                 border: '1px solid var(--border)',

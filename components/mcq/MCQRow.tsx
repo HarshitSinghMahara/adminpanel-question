@@ -48,6 +48,12 @@ function savePinnedTags(tags: string[]) {
 
 const COLLAPSED_HEIGHT = 44
 
+function extractFirstImageSrc(html?: string) {
+  if (!html) return null
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+  return m ? m[1] : null
+}
+
 export default function MCQRow({
   question, gridTemplate, colWidths, isExpanded, onToggle, onPreview,
 }: MCQRowProps) {
@@ -76,6 +82,8 @@ export default function MCQRow({
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120) || 'Untitled question…'
+
+  const firstImageSrc = extractFirstImageSrc(question.questionHTML)
 
   const handleTagChange = (tags: string[]) => {
     patch({ tags })
@@ -178,9 +186,16 @@ export default function MCQRow({
                 overflow: 'hidden',
               }}
             >
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {questionPreview}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {questionPreview}
+                </span>
+                {firstImageSrc && (
+                  // Small thumbnail in collapsed view
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={firstImageSrc} alt="preview" style={{ width: 56, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                )}
+              </div>
               <span style={{
                 background: question.type === 'MSQ' ? 'var(--amber-dim)' : 'var(--accent-dim)',
                 borderRadius: 999,
