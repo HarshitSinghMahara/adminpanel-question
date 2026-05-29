@@ -39,9 +39,11 @@ export default function RichEditor({
     content,
     immediatelyRender: false,
     onUpdate({ editor }) {
-      if (!isUpdatingRef.current) {
-        onChange(editor.getHTML())
-      }
+      if (isUpdatingRef.current) return
+      const html = editor.getHTML()
+      // Don't persist transient blob: URLs — wait until uploads complete
+      if (html.includes('blob:')) return
+      onChange(html)
     },
     onFocus() {
       setFocused(true)
