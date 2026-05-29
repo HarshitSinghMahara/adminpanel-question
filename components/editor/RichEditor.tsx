@@ -29,6 +29,7 @@ export default function RichEditor({
   const [focused, setFocused] = useState(false)
   const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isUpdatingRef = useRef(false)
+  const lastSavedHTMLRef = useRef(content)
   // Stable ref so the paste closure always has the latest editor instance
   const editorRef = useRef<Editor | null>(null)
 
@@ -43,8 +44,10 @@ export default function RichEditor({
       const html = editor.getHTML()
       // Don't persist transient blob: URLs — wait until uploads complete
       if (html.includes('blob:')) return
+      // Remember last HTML we saved so the external-sync effect can avoid
+      // overwriting it while persistence is in-flight.
+      lastSavedHTMLRef.current = html
       // Debug: log whether we're saving and whether a data:image is present
-      // (helps confirm if the data URL reached the editor before saving)
       try {
         // eslint-disable-next-line no-console
         console.log('RichEditor:onUpdate saving, has data url:', html.includes('data:image'))
@@ -121,7 +124,14 @@ export default function RichEditor({
   useEffect(() => {
     if (!editor) return
     const currentHTML = editor.getHTML()
-    if (content !== currentHTML && !focused) {
+    if (
+      content !== currentHTML &&
+      // Skip syncing if the incoming `content` matches the last HTML the
+      // editor just emitted — this avoids a race where we just saved and
+      // the store hasn't propagated the value back yet.
+      content !== lastSavedHTMLRef.current &&
+      !focused
+    ) {
       // Don't overwrite if editor already contains an inlined data image
       // that the persistent `content` doesn't yet have. This prevents
       // a race where the store replaces the editor right after paste.
